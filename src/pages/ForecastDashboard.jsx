@@ -24,8 +24,6 @@ import useCurrentTimestamp from "../utils/getCurrentTimestamp";
 import { loginAuth, registerAuth } from "../hooks/auth/Authentication";
 import { getForecastMingguan } from "../hooks/forecast/getForecastMingguan";
 import { useUser } from "../utils/userContext";
-import { generateSecureToken } from "../utils/Constants";
-import { downloadTokenAsFile } from "../utils/organizeKeyFile";
 
 const ForecastDashboard = () => {
   const { day, date, month, year, time } = useCurrentTimestamp();
@@ -41,51 +39,59 @@ const ForecastDashboard = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   // State untuk Auth
-  const { isAuthenticated, setIsAuthenticated } = useUser();
+  const { isAuthenticated } = useUser();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isAuthError, setIsAuthError] = useState(false);
-  const registerToken = generateSecureToken(32);
 
   useEffect(() => {
     const fetchAllData = async (coords) => {
+      // Step 1: Try to get location details (reverse geocode)
+      let locationDetails = null;
       try {
-        const locationDetails = await getLocation(
+        locationDetails = await getLocation(
           coords.latitude,
           coords.longitude
         );
         locationDetails.latitude = coords.latitude;
         locationDetails.longitude = coords.longitude;
-
-        if (
-          !locationDetails.province
-            .toLowerCase()
-            .includes("daerah istimewa yogyakarta")
-        ) {
-          setViewState("restricted");
-          return;
-        }
         setLocation(locationDetails);
-        const [forecastRes, nowRes, hargaRes, mingguanRes] = await Promise.all([
-          getDataForecast({ location: locationDetails }),
-          getNowForecast({ location: locationDetails }),
-          getHargaKomoditas({ location: locationDetails }),
-          getForecastMingguan({ location: locationDetails }),
-        ]);
-
-        setData(forecastRes);
-        setNowData(nowRes);
-        setHargaKomoditas(hargaRes);
-        setDataMingguan(mingguanRes);
-
-        setViewState("loaded");
       } catch (error) {
-        console.error("Error fetching data in parallel:", error);
-        setErrorMessage(
-          "Gagal memuat data. Periksa koneksi Anda dan coba lagi."
-        );
-        setViewState("error");
+        console.warn("Reverse geocode failed, using coordinates only:", error);
+        // Fallback: use coordinates without city/province info
+        locationDetails = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          road: "Tidak diketahui",
+          city: "Tidak diketahui",
+          province: "Indonesia",
+        };
+        setLocation(locationDetails);
       }
+
+      // Step 2: Fetch all data independently — don't let one failure block others
+      const results = await Promise.allSettled([
+        getDataForecast({ location: locationDetails }),
+        getNowForecast({ location: locationDetails }),
+        getHargaKomoditas({ location: locationDetails }),
+        getForecastMingguan({ location: locationDetails }),
+      ]);
+
+      if (results[0].status === "fulfilled" && results[0].value?.weatherData) {
+        setData(results[0].value);
+      }
+      if (results[1].status === "fulfilled" && results[1].value?.dataCuaca) {
+        setNowData(results[1].value);
+      }
+      if (results[2].status === "fulfilled" && results[2].value) {
+        setHargaKomoditas(results[2].value);
+      }
+      if (results[3].status === "fulfilled" && results[3].value) {
+        setDataMingguan(results[3].value);
+      }
+
+      // Always show the full UI
+      setViewState("loaded");
     };
 
     const handleSuccess = (position) => {
@@ -103,25 +109,27 @@ const ForecastDashboard = () => {
         const savedLoc = JSON.parse(savedLocString);
         fetchAllData(savedLoc);
       } else {
-        setErrorMessage(
-          "Gagal mendapatkan lokasi. Aktifkan izin lokasi di browser Anda."
-        );
-        setViewState("error");
+        // Default to Jakarta if no location available
+        const defaultLoc = {
+          latitude: -6.2088,
+          longitude: 106.8456,
+        };
+        fetchAllData(defaultLoc);
       }
     };
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(handleSuccess, handleError);
+      navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      });
     } else {
-      setErrorMessage("Geolocation tidak didukung oleh browser ini.");
-      setViewState("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("token");
-    if (storedUser) {
-      setIsAuthenticated(true);
+      const defaultLoc = {
+        latitude: -6.2088,
+        longitude: 106.8456,
+      };
+      fetchAllData(defaultLoc);
     }
   }, []);
 
@@ -137,17 +145,16 @@ const ForecastDashboard = () => {
 
   const handleLogin = useCallback(async (formData) => {
     try {
-      if (!formData.username || !formData.token) {
+      if (!formData.email || !formData.password) {
         setIsAuthError(true);
-        setErrorMessage("Username dan token harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await loginAuth(formData);
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsLoginOpen(false);
-        window.location.reload();
+        setIsAuthError(false);
       } else {
         setIsAuthError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -160,18 +167,16 @@ const ForecastDashboard = () => {
 
   const handleRegister = useCallback(async (formData) => {
     try {
-      if (!formData.username) {
+      if (!formData.email || !formData.password) {
         setIsAuthError(true);
-        setErrorMessage("Username harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await registerAuth(formData);
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsRegisterOpen(false);
-        downloadTokenAsFile(formData.token, formData.username);
-        window.location.reload();
+        setIsAuthError(false);
       } else {
         setIsAuthError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -201,39 +206,6 @@ const ForecastDashboard = () => {
           </div>
         </div>
       </motion.div>
-    );
-  }
-
-  if (viewState === "error") {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500 text-lg">{errorMessage}</p>
-      </div>
-    );
-  }
-
-  if (viewState === "restricted") {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="grid grid-cols-1 gap-4 text-center">
-          <OctagonAlert className="w-16 h-16 text-red-500 animate-pulse flex items-center justify-center mx-auto" />
-          <p className="text-gray-500 text-lg">
-            Maaf, layanan ini hanya tersedia untuk wilayah Daerah Istimewa
-            Yogyakarta
-          </p>
-          <span className="text-[#6C7D41] text-lg font-medium">
-            Butuh bantuan? Hubungi kami di{" "}
-            <a
-              href="https://wa.me/081234567890"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#6C7D41] underline"
-            >
-              081234567890
-            </a>
-          </span>
-        </div>
-      </div>
     );
   }
 
@@ -279,20 +251,53 @@ const ForecastDashboard = () => {
         )}
         <div className="flex flex-col lg:flex-row gap-6 mx-auto">
           <div className="w-full lg:w-3/5 space-y-6">
-            <ForecastHariIni
-              timestamp={timestamp}
-              location={location}
-              data={data}
-              nowData={nowData}
-              dataMingguan={dataMingguan}
-            />
+            {data && nowData ? (
+              <ForecastHariIni
+                timestamp={timestamp}
+                location={location}
+                data={data}
+                nowData={nowData}
+                dataMingguan={dataMingguan}
+              />
+            ) : (
+              <div className="rounded-xl border border-gray-200 shadow-sm">
+                <div className="border-b border-gray-100 p-4 bg-[#F4F7F4] rounded-t-xl">
+                  <h2 className="text-lg font-medium text-[#6C7D41]">Cuaca Hari Ini</h2>
+                </div>
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <OctagonAlert className="w-10 h-10 text-gray-400 mb-3" />
+                  <p className="text-gray-500 text-sm">Data cuaca saat ini tidak tersedia. Periksa koneksi Anda.</p>
+                  <button onClick={() => window.location.reload()} className="mt-3 px-4 py-1.5 bg-[#6C7D41] text-white rounded-lg hover:bg-[#5b6a37] transition-colors text-sm font-medium">Coba Lagi</button>
+                </div>
+              </div>
+            )}
             <DashboardData />
             <HargaKomoditas dataHargaKomoditas={hargaKomoditas} />
           </div>
           <div className="w-full lg:w-2/5 space-y-6">
             <WaspadaCuaca />
-            <RekomendasiAI location={location} />
-            <ForecastKedepan location={location} />
+            {location ? (
+              <RekomendasiAI location={location} />
+            ) : (
+              <div className="rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex border-b border-gray-100 p-4 bg-[#F4F7F4] rounded-t-xl">
+                  <h2 className="text-lg font-medium text-[#6C7D41]">Rekomendasi AI</h2>
+                </div>
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <p className="text-gray-500 text-sm">Data rekomendasi tidak tersedia.</p>
+                </div>
+              </div>
+            )}
+            {location ? (
+              <ForecastKedepan location={location} />
+            ) : (
+              <div className="hidden md:block rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-6">
+                  <h3 className="font-medium text-gray-700">Perkiraan Mingguan</h3>
+                  <p className="text-gray-500 text-sm mt-2">Data tidak tersedia.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -320,7 +325,7 @@ const ForecastDashboard = () => {
         title="Buat Akun"
         description="Silahkan buat akun untuk mendapatkan fitur dan data yang lebih lengkap"
       >
-        <RegisterForm onSubmit={handleRegister} initialToken={registerToken} />
+        <RegisterForm onSubmit={handleRegister} />
       </Modal>
     </>
   );

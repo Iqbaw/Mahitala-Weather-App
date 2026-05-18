@@ -1,64 +1,63 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
-import axiosInstance from "./axiosInstance";
-import { API_URL } from "./Constants";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+} from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  getDocs,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBJtTlFqSInZ14sSCaPuH8V2HuluBIRkIU",
-  authDomain: "mahitala-cb8b6.firebaseapp.com",
-  projectId: "mahitala-cb8b6",
-  storageBucket: "mahitala-cb8b6.firebasestorage.app",
-  messagingSenderId: "139501858476",
-  appId: "1:139501858476:web:e0c7771358b4c250083909",
-  measurementId: "G-71VGCDW19P",
+  apiKey: "AIzaSyD-dZryTn5E_u6NUFFwDgssV9ppbKLbbNk",
+  authDomain: "mahitala-weather.firebaseapp.com",
+  projectId: "mahitala-weather",
+  storageBucket: "mahitala-weather.firebasestorage.app",
+  messagingSenderId: "625460952768",
+  appId: "1:625460952768:web:280b42aae906d85946b725",
+  measurementId: "G-LNP6JZ5LZ6",
 };
 
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-export const requestPermissionAndRegisterToken = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    return null;
-  }
+// Admin email
+const ADMIN_EMAIL = "iqbawawbatmee@gmail.com";
 
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      return null;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-
-    const fcmToken = await getToken(messaging, {
-      vapidKey:
-        "BCLRrmurifCU5zU_aNYrTg0y7gOqyQyhsCsd_XwOyvSgffNbtiN0aY8UqnYmsSE5jDY8Myog51Fw5KQLnYGwoYc",
-      serviceWorkerRegistration: registration,
-    });
-
-    if (fcmToken) {
-      const res = await axiosInstance.post(
-        API_URL + "/api/notifications/register-token",
-        {
-          fcmToken: fcmToken,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    return fcmToken;
-  } catch (err) {
-    return null;
-  }
+export {
+  app,
+  auth,
+  db,
+  ADMIN_EMAIL,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  collection,
+  doc,
+  addDoc,
+  getDocs,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
 };
-
-export const onMessageListener = () =>
-  new Promise((resolve) => {
-    onMessage(messaging, (payload) => {
-      resolve(payload);
-    });
-  });

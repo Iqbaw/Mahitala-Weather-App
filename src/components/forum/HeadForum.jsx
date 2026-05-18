@@ -7,23 +7,14 @@ import { loginAuth, registerAuth, logoutAuth } from "../../hooks/auth/Authentica
 import { useUser } from "../../utils/userContext";
 
 import { Modal, LoginForm, RegisterForm } from "../auth/ModalAuth";
-import { generateSecureToken } from "../../utils/Constants";
 
 const HeadForum = () => {
-  const { setIsAuthenticated, isAuthenticated } = useUser();
+  const { isAuthenticated } = useUser();
   const [searchText, setSearchText] = useState("");
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isError, setIsAuthError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const registerToken = generateSecureToken(32);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("token");
-    if (storedUser) {
-      setIsAuthenticated(true);
-    }
-  }, []);
 
   const handleInputChange = (event) => {
     setSearchText(event.target.value);
@@ -41,18 +32,16 @@ const HeadForum = () => {
 
   const handleLogin = useCallback(async (formData) => {
     try {
-      if (!formData.username || !formData.token) {
+      if (!formData.email || !formData.password) {
         setIsAuthError(true);
-        setErrorMessage("Username dan token harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await loginAuth(formData);
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsLoginOpen(false);
-        window.location.reload();
-
+        setIsAuthError(false);
       } else {
         setIsAuthError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -65,19 +54,17 @@ const HeadForum = () => {
   
   const handleRegister = useCallback(async (formData) => {
     try {
-      if (!formData.username) {
+      if (!formData.email || !formData.password) {
         setIsAuthError(true);
-        setErrorMessage("Username harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await registerAuth(formData);
   
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsRegisterOpen(false);
-        downloadTokenAsFile(formData.token, formData.username);
-        window.location.reload();
+        setIsAuthError(false);
       } else {
         setIsAuthError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -89,7 +76,6 @@ const HeadForum = () => {
   }, []);
   
   const handleLogout = useCallback(() => {
-    setIsAuthenticated(false);
     logoutAuth();
   }, []);
 
@@ -209,7 +195,7 @@ const HeadForum = () => {
         title="Buat Akun"
         description="Silahkan buat akun untuk bergabung dalam diskusi"
       >
-        <RegisterForm onSubmit={handleRegister} initialToken={registerToken} />
+        <RegisterForm onSubmit={handleRegister} />
       </Modal>
     </div>
   );

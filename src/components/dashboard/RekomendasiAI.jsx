@@ -39,99 +39,109 @@ const RekomendasiAI = ({ location }) => {
           <h2 className="text-lg font-medium text-[#6C7D41]">Rekomendasi AI</h2>
         </div>
         <div className="p-6">
-          <PredictionCarousel
-            prediction={prediction}
-            currentIndex={currentIndex}
-            setCurrentIndex={setCurrentIndex}
-          />
-          <h4 className="text-sm font-medium mt-6">
-            Rata-rata 3 Bulan Kedepan
-          </h4>
-          <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl">
-            <ThermometerSun
-              className={`w-14 h-14 ${colorRecommendation(prediction.temperature, cropRecommendation.temperature_min, cropRecommendation.temperature_max)}`}
-            />
-            <div className="ml-4">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium">Suhu</h4>
+          {prediction && prediction.rekomendasi_final_json ? (
+            <>
+              <PredictionCarousel
+                prediction={prediction}
+                currentIndex={currentIndex}
+                setCurrentIndex={setCurrentIndex}
+              />
+              <h4 className="text-sm font-medium mt-6">
+                Rata-rata 3 Bulan Kedepan
+              </h4>
+              <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl">
+                <ThermometerSun
+                  className={`w-14 h-14 ${colorRecommendation(prediction.temperature, cropRecommendation.temperature_min, cropRecommendation.temperature_max)}`}
+                />
+                <div className="ml-4">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">Suhu</h4>
+                  </div>
+                  <p
+                    className={`text-sm font-medium ${colorRecommendation(prediction.temperature, cropRecommendation.temperature_min, cropRecommendation.temperature_max)}`}
+                  >
+                    {checkIdeal(
+                      prediction.temperature,
+                      cropRecommendation.temperature_min,
+                      cropRecommendation.temperature_max
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Suhu rata-rata 3 bulan kedepan adalah{" "}
+                    <span className="font-bold">
+                      {parseInt(prediction.temperature)}°C
+                    </span>
+                  </p>
+                </div>
               </div>
-              <p
-                className={`text-sm font-medium ${colorRecommendation(prediction.temperature, cropRecommendation.temperature_min, cropRecommendation.temperature_max)}`}
-              >
-                {checkIdeal(
-                  prediction.temperature,
-                  cropRecommendation.temperature_min,
-                  cropRecommendation.temperature_max
-                )}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Suhu rata-rata 3 bulan kedepan adalah{" "}
-                <span className="font-bold">
-                  {parseInt(prediction.temperature)}°C
-                </span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl grid-cols-2">
-            <Droplets
-              className={`w-14 h-14 ${colorRecommendation(prediction.humidity, cropRecommendation.humidity_min, cropRecommendation.humidity_max)}`}
-            />
-            <div className="ml-4">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium">Kelembaban</h4>
+              <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl grid-cols-2">
+                <Droplets
+                  className={`w-14 h-14 ${colorRecommendation(prediction.humidity, cropRecommendation.humidity_min, cropRecommendation.humidity_max)}`}
+                />
+                <div className="ml-4">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">Kelembaban</h4>
+                  </div>
+                  <p
+                    className={`text-sm font-medium ${colorRecommendation(prediction.humidity, cropRecommendation.humidity_min, cropRecommendation.humidity_max)}`}
+                  >
+                    {checkIdeal(
+                      prediction.humidity,
+                      cropRecommendation.humidity_min,
+                      cropRecommendation.humidity_max
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Kelembaban rata-rata 3 bulan kedepan adalah{" "}
+                    <span className="font-bold">
+                      {parseInt(prediction.humidity)}%
+                    </span>
+                  </p>
+                </div>
               </div>
-              <p
-                className={`text-sm font-medium ${colorRecommendation(prediction.humidity, cropRecommendation.humidity_min, cropRecommendation.humidity_max)}`}
-              >
-                {checkIdeal(
-                  prediction.humidity,
-                  cropRecommendation.humidity_min,
-                  cropRecommendation.humidity_max
-                )}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Kelembaban rata-rata 3 bulan kedepan adalah{" "}
-                <span className="font-bold">
-                  {parseInt(prediction.humidity)}%
-                </span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl">
-            <Cloud
-              className={`w-14 h-14 ${colorRecommendation(prediction.rainfall, cropRecommendation.rainfall_min, cropRecommendation.rainfall_max)}`}
-            />
-            <div className="ml-4">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium">Curah Hujan</h4>
+              <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl">
+                <Cloud
+                  className={`w-14 h-14 ${colorRecommendation(prediction.rainfall, cropRecommendation.rainfall_min, cropRecommendation.rainfall_max)}`}
+                />
+                <div className="ml-4">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">Curah Hujan</h4>
+                  </div>
+                  <p
+                    className={`text-sm font-medium ${colorRecommendation(prediction.rainfall, cropRecommendation.rainfall_min, cropRecommendation.rainfall_max)}`}
+                  >
+                    {checkIdeal(
+                      prediction.rainfall,
+                      cropRecommendation.rainfall_min,
+                      cropRecommendation.rainfall_max
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Curah hujan rata-rata 3 bulan kedepan adalah{" "}
+                    <span className="font-bold">
+                      {parseInt(prediction.rainfall)} mm
+                    </span>
+                  </p>
+                </div>
               </div>
-              <p
-                className={`text-sm font-medium ${colorRecommendation(prediction.rainfall, cropRecommendation.rainfall_min, cropRecommendation.rainfall_max)}`}
-              >
-                {checkIdeal(
-                  prediction.rainfall,
-                  cropRecommendation.rainfall_min,
-                  cropRecommendation.rainfall_max
-                )}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Curah hujan rata-rata 3 bulan kedepan adalah{" "}
-                <span className="font-bold">
-                  {parseInt(prediction.rainfall)} mm
-                </span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium">Rekomendasi Curah Hujan</h4>
+              <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">Rekomendasi Curah Hujan</h4>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {rainfallRecommendation(prediction.rainfall)}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-600 mt-1">
-                {rainfallRecommendation(prediction.rainfall)}
-              </p>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Cloud className="w-12 h-12 text-gray-300 mb-3" />
+              <p className="text-gray-500 text-sm">Data rekomendasi AI sedang tidak tersedia.</p>
+              <p className="text-gray-400 text-xs mt-1">Fitur ini memerlukan koneksi ke server ML.</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>

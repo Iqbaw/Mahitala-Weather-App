@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import ForecastDashboard from "./pages/ForecastDashboard";
@@ -19,10 +19,6 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { UserProvider } from "./utils/userContext";
 import ProtectedRoute from "./utils/middleware";
-import {
-  requestPermissionAndRegisterToken,
-  onMessageListener,
-} from "./utils/firebase";
 import PwaHandler from "./PwaHandler";
 import DiskusiTerakhir from "./components/forum/lastdiscussion/DiskusiTerakhir";
 
@@ -133,61 +129,6 @@ const PageWrapper = ({ children, routePath }) => {
 };
 
 function App() {
-  useEffect(() => {
-    requestPermissionAndRegisterToken();
-
-    const unsubscribe = onMessageListener().then((payload) => {
-      console.log("Message received. ", payload);
-      const { title, body } = payload.notification;
-
-      toast.info(
-        <div
-          style={{
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            padding: "4px 0",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: "600",
-              fontSize: "15px",
-              color: "#111827",
-              marginBottom: "6px",
-              lineHeight: "1.3",
-            }}
-          >
-            {title}
-          </div>
-          <div
-            style={{
-              fontSize: "14px",
-              color: "#4b5563",
-              lineHeight: "1.4",
-            }}
-          >
-            {body}
-          </div>
-        </div>,
-        {
-          style: {
-            background: "#ffffff",
-            border: "1px solid #d1d5db",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            padding: "12px 16px",
-          },
-          progressStyle: {
-            background: "#3b82f6",
-          },
-        }
-      );
-    });
-
-    return () => {
-      unsubscribe.then((unsub) => unsub()).catch((err) => console.error(err));
-    };
-  }, []);
-
   return (
     <HelmetProvider>
       <UserProvider>

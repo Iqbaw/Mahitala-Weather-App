@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { checkWaktu, generateHash } from "../../../../utils/Constants";
 import { balasDiskusi } from "../../../../hooks/forum/diskusi/cDiskusi";
 import { useNavigate } from "react-router-dom";
-import { checkUser } from "../../../../hooks/auth/Authentication";
+import { useUser } from "../../../../utils/userContext";
 import Swal from "sweetalert2";
 
 const InputBalasDiskusi = ({
@@ -14,22 +14,11 @@ const InputBalasDiskusi = ({
   replies,
   setReplies,
 }) => {
-  const token = localStorage.getItem("token");
-  const [user, setUser] = useState(null);
+  const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (token) {
-      checkUser().then((data) => {
-        if (data) {
-          setUser(data);
-        }
-      });
-    }
-  }, [token]);
-
   const handleReplySubmit = () => {
-    if (!token) {
+    if (!isAuthenticated) {
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -43,7 +32,7 @@ const InputBalasDiskusi = ({
       generateHash(new Date().toString() + newReplyContent).then((id) => {
         const newReply = {
           id: id,
-          user: user.username,
+          user: user?.displayName || user?.email || "Anonim",
           time: checkWaktu(new Date()),
           content: newReplyContent,
           parentId: replyReference ? replyReference.id : null,

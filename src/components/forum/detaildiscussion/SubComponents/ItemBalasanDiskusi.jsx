@@ -1,19 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { checkUser } from "../../../../hooks/auth/Authentication";
+import { useUser } from "../../../../utils/userContext";
 
 const ItemBalasanDiskusi = ({ reply, replies, setReplyReference, handleDeleteMainReply, handleDeleteSubReply }) => {
-  const token = localStorage.getItem("token");
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    if (token) {
-      checkUser().then((data) => {
-        if (data) {
-          setUser(data);
-        }
-      });
-    }
-  }, [token]);
+  const { user } = useUser();
 
   const renderReplies = (parentId) => {
     return replies

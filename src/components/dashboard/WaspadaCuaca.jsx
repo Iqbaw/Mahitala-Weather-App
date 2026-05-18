@@ -9,44 +9,19 @@ import {
   Info,
 } from "lucide-react";
 
-import { API_URL } from "../../utils/Constants";
-
 const WeatherWarningDisplay = () => {
   const [expanded, setExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [warningData, setWarningData] = useState(null);
 
   useEffect(() => {
-    const fetchWeatherWarning = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/cuaca/warning`);
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-
-        const data = await response.json();
-        if (data) {
-          setWarningData(data);
-        }
-      } catch (error) {
-        console.error("Error fetching weather warning data:", error);
-        setWarningData(null);
-      }
-    };
-    fetchWeatherWarning();
+    // Weather warning API is currently unavailable
+    // Will be re-enabled when a public warning endpoint is available
+    setWarningData(null);
   }, []);
 
   if (!warningData) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={18} className="text-gray-500" />
-          <p className="text-sm text-gray-700">
-            Memuat data peringatan cuaca...
-          </p>
-        </div>
-      </div>
-    );
+    return null; // Don't render anything if no warnings
   }
 
   const decodeHtmlEntities = (text) => {

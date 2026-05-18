@@ -8,23 +8,13 @@ import Swal from "sweetalert2";
 import { useUser } from "../utils/userContext";
 import { Modal, LoginForm, RegisterForm } from "../components/auth/ModalAuth";
 import { loginAuth, registerAuth, logoutAuth } from "../hooks/auth/Authentication";
-import { generateSecureToken } from "../utils/Constants";
-import { downloadTokenAsFile } from "../utils/organizeKeyFile";
 
 const Footer = () => {
-  const { isAuthenticated, setIsAuthenticated } = useUser();
+  const { isAuthenticated } = useUser();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const registerToken = generateSecureToken(32);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("token");
-    if (storedUser) {
-      setIsAuthenticated(true);
-    }
-  }, []);
 
   const toggleLoginModal = useCallback(() => {
     setIsError(false);
@@ -38,17 +28,16 @@ const Footer = () => {
 
   const handleLogin = useCallback(async (formData) => {
     try {
-      if (!formData.username || !formData.token) {
+      if (!formData.email || !formData.password) {
         setIsError(true);
-        setErrorMessage("Username dan token harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await loginAuth(formData);
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsLoginOpen(false);
-        window.location.reload();
+        setIsError(false);
       } else {
         setIsError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -61,19 +50,17 @@ const Footer = () => {
 
   const handleRegister = useCallback(async (formData) => {
     try {
-      if (!formData.username) {
+      if (!formData.email || !formData.password) {
         setIsError(true);
-        setErrorMessage("Username harus diisi");
+        setErrorMessage("Email dan password harus diisi");
         return;
       }
 
       const res = await registerAuth(formData);
 
       if (res.status === 200) {
-        setIsAuthenticated(true);
         setIsRegisterOpen(false);
-        downloadTokenAsFile(formData.token, formData.username);
-        window.location.reload();
+        setIsError(false);
       } else {
         setIsError(true);
         setErrorMessage(res.message || "Terjadi kesalahan, silahkan coba lagi");
@@ -159,7 +146,6 @@ const Footer = () => {
                         }).then((result) => {
                           if (result.isConfirmed) {
                             logoutAuth();
-                            setIsAuthenticated(false);
                             Swal.fire({
                               title: "Berhasil Keluar",
                               text: "Anda telah berhasil keluar.",
@@ -291,7 +277,7 @@ const Footer = () => {
         title="Buat Akun"
         description="Silahkan buat akun untuk mendapatkan fitur dan data yang lebih lengkap"
       >
-        <RegisterForm onSubmit={handleRegister} initialToken={registerToken} />
+        <RegisterForm onSubmit={handleRegister} />
       </Modal>
     </>
   );

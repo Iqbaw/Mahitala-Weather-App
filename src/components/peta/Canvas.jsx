@@ -256,12 +256,7 @@ const Canvas = ({ location, nowData }) => {
    * Authentication and Responsive Design
    * =====================================================
    */
-  useEffect(() => {
-    const storedUser = localStorage.getItem("token");
-    if (storedUser) {
-      setIsAuthenticated(true);
-    }
-  }, []);
+  // Auth state is now managed by Firebase onAuthStateChanged in userContext
 
   useEffect(() => {
     const checkMobile = () => {

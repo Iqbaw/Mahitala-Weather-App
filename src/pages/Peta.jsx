@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { OctagonAlert } from "lucide-react";
 
 import Canvas from "../components/peta/Canvas";
+import Header from "../components/Header";
 import getLocation from "../utils/getLocationAccess";
 import { getNowForecast } from "../hooks/forecast/getDataForecast";
 import useCurrentTimestamp from "../utils/getCurrentTimestamp";
@@ -17,27 +18,31 @@ const Peta = () => {
   const [nowData, setNowData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // --- OPTIMIZATION: Fetch data in parallel ---
   useEffect(() => {
     const fetchAllData = async (coords) => {
       try {
-        const locationDetails = await getLocation(
-          coords.latitude,
-          coords.longitude
-        );
+        let locationDetails;
+        try {
+          locationDetails = await getLocation(
+            coords.latitude,
+            coords.longitude
+          );
+        } catch {
+          locationDetails = {
+            road: "Tidak diketahui",
+            city: "Tidak diketahui",
+            province: "Indonesia",
+          };
+        }
         locationDetails.latitude = coords.latitude;
         locationDetails.longitude = coords.longitude;
 
-        if (
-          !locationDetails.province
-            .toLowerCase()
-            .includes("daerah istimewa yogyakarta")
-        ) {
-          setViewState("restricted");
-          return;
+        let nowRes = null;
+        try {
+          nowRes = await getNowForecast({ location: locationDetails });
+        } catch (e) {
+          console.warn("Now forecast failed:", e);
         }
-
-        const nowRes = await getNowForecast({ location: locationDetails });
 
         setLocation(locationDetails);
         setNowData(nowRes);
@@ -65,10 +70,8 @@ const Peta = () => {
         const savedLoc = JSON.parse(savedLocString);
         fetchAllData(savedLoc);
       } else {
-        setErrorMessage(
-          "Gagal mendapatkan lokasi. Aktifkan izin lokasi di browser Anda."
-        );
-        setViewState("error");
+        // Default to Jakarta
+        fetchAllData({ latitude: -6.2088, longitude: 106.8456 });
       }
     };
 
@@ -79,8 +82,7 @@ const Peta = () => {
         maximumAge: 0,
       });
     } else {
-      setErrorMessage("Geolocation tidak didukung oleh browser ini.");
-      setViewState("error");
+      fetchAllData({ latitude: -6.2088, longitude: 106.8456 });
     }
   }, []);
 
@@ -108,34 +110,14 @@ const Peta = () => {
 
   if (viewState === "error") {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500 text-lg text-center p-4">{errorMessage}</p>
-      </div>
-    );
-  }
-
-  if (viewState === "restricted") {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="grid grid-cols-1 gap-4 text-center">
-          <OctagonAlert className="w-16 h-16 text-red-500 animate-pulse flex items-center justify-center mx-auto" />
-          <p className="text-gray-500 text-lg">
-            Maaf, layanan ini hanya tersedia untuk wilayah Daerah Istimewa
-            Yogyakarta
-          </p>
-          <span className="text-[#6C7D41] text-lg font-medium">
-            Butuh bantuan? Hubungi kami di{" "}
-            <a
-              href="https://wa.me/081234567890"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#6C7D41] underline"
-            >
-              081234567890
-            </a>
-          </span>
+      <>
+        <Header />
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <OctagonAlert className="w-16 h-16 text-red-500 mb-4" />
+          <p className="text-gray-500 text-lg text-center p-4">{errorMessage}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-[#6C7D41] text-white rounded-lg hover:bg-[#5b6a37] transition-colors font-semibold">Coba Lagi</button>
         </div>
-      </div>
+      </>
     );
   }
 
